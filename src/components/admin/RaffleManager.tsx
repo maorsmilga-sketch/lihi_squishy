@@ -7,7 +7,8 @@ import type { AdminRaffleState, Raffle } from "@/lib/types";
 type FormState = {
   title: string;
   description: string;
-  endsAt: string;
+  endsDate: string;
+  endsTime: string;
   imageFile: File | null;
   imagePreview: string;
 };
@@ -15,15 +16,31 @@ type FormState = {
 const emptyForm: FormState = {
   title: "הגרלת סקווישי",
   description: "",
-  endsAt: "",
+  endsDate: "",
+  endsTime: "",
   imageFile: null,
   imagePreview: "",
 };
 
-function toLocalInput(iso: string) {
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function toLocalParts(iso: string) {
   const date = new Date(iso);
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return {
+    endsDate: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    endsTime: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+  };
+}
+
+function combineLocalDateTime(endsDate: string, endsTime: string) {
+  const datePart = endsDate.trim();
+  const timePart = endsTime.trim() || "23:59";
+  if (!datePart) return null;
+  const combined = new Date(`${datePart}T${timePart}`);
+  if (Number.isNaN(combined.getTime())) return null;
+  return combined;
 }
 
 export function RaffleManager() {
@@ -42,7 +59,7 @@ export function RaffleManager() {
       setForm({
         title: data.raffle.title,
         description: data.raffle.description ?? "",
-        endsAt: toLocalInput(data.raffle.ends_at),
+        ...toLocalParts(data.raffle.ends_at),
         imageFile: null,
         imagePreview: data.raffle.image_url,
       });
@@ -60,7 +77,7 @@ export function RaffleManager() {
           setForm({
             title: data.raffle.title,
             description: data.raffle.description ?? "",
-            endsAt: toLocalInput(data.raffle.ends_at),
+            ...toLocalParts(data.raffle.ends_at),
             imageFile: null,
             imagePreview: data.raffle.image_url,
           });
@@ -96,15 +113,20 @@ export function RaffleManager() {
       if (!imageUrl) {
         throw new Error("צריך תמונה של הסקווישי להגרלה");
       }
-      if (!form.endsAt) {
-        throw new Error("בחרו מתי ההגרלה נגמרת");
+
+      const endsDate = combineLocalDateTime(form.endsDate, form.endsTime);
+      if (!endsDate) {
+        throw new Error("בחרו תאריך ושעה לסיום ההגרלה");
+      }
+      if (endsDate.getTime() <= Date.now()) {
+        throw new Error("זמן הסיום צריך להיות בעתיד");
       }
 
       const body = {
         title: form.title.trim() || "הגרלת סקווישי",
         description: form.description.trim(),
         image_url: imageUrl,
-        ends_at: new Date(form.endsAt).toISOString(),
+        ends_at: endsDate.toISOString(),
       };
 
       const current = state?.raffle;
@@ -188,6 +210,7 @@ export function RaffleManager() {
       {showForm ? (
         <form
           onSubmit={handleSubmit}
+          noValidate
           className="space-y-3 rounded-3xl bg-white p-4 shadow-sm ring-2 ring-squishy-yellow-soft"
         >
           <h3 className="text-lg font-extrabold">
@@ -249,18 +272,36 @@ export function RaffleManager() {
             />
           </label>
 
-          <label className="block">
-            <span className="mb-1 block text-sm font-bold">עד מתי אפשר להירשם</span>
-            <input
-              type="datetime-local"
-              required
-              value={form.endsAt}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, endsAt: event.target.value }))
-              }
-              className="w-full rounded-2xl border-2 border-squishy-yellow/50 bg-squishy-yellow-soft px-4 py-3 font-bold outline-none"
-            />
-          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="mb-1 block text-sm font-bold">תאריך סיום</span>
+              <input
+                type="date"
+                value={form.endsDate}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    endsDate: event.target.value,
+                  }))
+                }
+                className="w-full rounded-2xl border-2 border-squishy-yellow/50 bg-squishy-yellow-soft px-3 py-3 font-bold outline-none"
+              />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-sm font-bold">שעת סיום</span>
+              <input
+                type="time"
+                value={form.endsTime}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    endsTime: event.target.value,
+                  }))
+                }
+                className="w-full rounded-2xl border-2 border-squishy-yellow/50 bg-squishy-yellow-soft px-3 py-3 font-bold outline-none"
+              />
+            </label>
+          </div>
 
           <button
             type="submit"
