@@ -9,7 +9,7 @@ export function CartButton() {
     <button
       type="button"
       onClick={openCart}
-      className="absolute bottom-[5.6rem] left-3 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-squishy-yellow shadow-lg ring-4 ring-white active:scale-95"
+      className="fixed bottom-[calc(5.6rem+env(safe-area-inset-bottom))] left-3 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-squishy-yellow shadow-lg ring-4 ring-white active:scale-95 sm:absolute sm:bottom-[5.6rem] sm:left-3"
       aria-label="פתיחת סל הקניות"
     >
       <span className="text-2xl" aria-hidden>

@@ -5,4 +5,5 @@ export type CartItem = {
   description: string | null;
   category: string | null;
   quantity: number;
+  stock?: number;
 };

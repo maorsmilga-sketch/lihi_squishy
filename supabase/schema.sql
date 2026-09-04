@@ -16,6 +16,7 @@ create table if not exists public.products (
   description text,
   category text,
   external_link text,
+  stock integer not null default 1 check (stock >= 0),
   created_at timestamptz not null default now()
 );
 
@@ -28,7 +29,8 @@ create table if not exists public.videos (
 
 create table if not exists public.settings (
   id integer primary key default 1 check (id = 1),
-  about_text text not null default ''
+  about_text text not null default '',
+  page_views integer not null default 0 check (page_views >= 0)
 );
 
 insert into public.settings (id, about_text)
@@ -79,7 +81,7 @@ create policy "Public can read settings"
 
 -- הקישור החיצוני מוסתר ממשתמשות רגילות גם ברמת העמודה
 revoke all on table public.products from anon, authenticated;
-grant select (id, image_url, price, description, category, created_at)
+grant select (id, image_url, price, description, category, stock, created_at)
   on table public.products to anon, authenticated;
 
 grant select on table public.videos to anon, authenticated;

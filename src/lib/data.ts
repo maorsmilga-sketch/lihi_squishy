@@ -1,5 +1,6 @@
 import { getPublicSupabase } from "@/lib/supabase/client";
 import { loadCategoryMap, mergeProductCategories } from "@/lib/category-map";
+import { loadStockMap, mergeProductStock } from "@/lib/stock-map";
 import {
   ADMIN_PRODUCT_COLUMNS,
   PUBLIC_PRODUCT_COLUMNS,
@@ -17,15 +18,28 @@ export async function selectProducts(
   admin = false,
 ): Promise<Product[]> {
   const columns = admin ? ADMIN_PRODUCT_COLUMNS : PUBLIC_PRODUCT_COLUMNS;
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("products")
     .select(columns)
     .order("created_at", { ascending: false });
 
+  if (error && /stock/i.test(error.message)) {
+    const withoutStock = columns.replace(", stock", "");
+    const retry = await supabase
+      .from("products")
+      .select(withoutStock)
+      .order("created_at", { ascending: false });
+    data = retry.data as typeof data;
+    error = retry.error;
+  }
+
   let products: Product[] = [];
 
   if (!error) {
-    products = (data as unknown as Product[]) ?? [];
+    products = ((data as unknown as Product[]) ?? []).map((product) => ({
+      ...product,
+      stock: typeof product.stock === "number" ? product.stock : 1,
+    }));
   } else {
     const fallbackColumns = admin
       ? "id, image_url, price, description, external_link, created_at"
@@ -43,11 +57,20 @@ export async function selectProducts(
     products = ((fallback.data as unknown as Product[]) ?? []).map((product) => ({
       ...product,
       category: product.category ?? null,
+      stock: 1,
     }));
   }
 
-  const map = await loadCategoryMap(admin ? supabase : null);
-  return mergeProductCategories(products, map);
+  const supabaseForMaps = admin ? supabase : null;
+  const [categoryMap, stockMap] = await Promise.all([
+    loadCategoryMap(supabaseForMaps),
+    loadStockMap(supabaseForMaps),
+  ]);
+  const withMeta = mergeProductStock(
+    mergeProductCategories(products, categoryMap),
+    stockMap,
+  );
+  return admin ? withMeta : withMeta.filter((product) => product.stock > 0);
 }
 
 export async function getProducts(): Promise<Product[]> {

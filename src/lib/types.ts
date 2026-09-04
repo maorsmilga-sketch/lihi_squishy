@@ -4,6 +4,7 @@ export type Product = {
   price: number;
   description: string | null;
   category: string | null;
+  stock: number;
   created_at: string;
   external_link?: string | null;
 };
@@ -18,6 +19,7 @@ export type Video = {
 export type Settings = {
   id: number;
   about_text: string;
+  page_views?: number;
 };
 
 export type Raffle = {

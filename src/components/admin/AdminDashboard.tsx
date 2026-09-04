@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import {
+  adminFetch,
   clearStoredAdminPassword,
   getStoredAdminPassword,
   setStoredAdminPassword,
@@ -19,6 +20,7 @@ export function AdminDashboard() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("products");
+  const [pageViews, setPageViews] = useState<number | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -38,6 +40,13 @@ export function AdminDashboard() {
       if (ignore) return;
       if (ok) {
         setUnlocked(true);
+        adminFetch("/api/views")
+          .then((response) => response.json())
+          .then((data: { page_views?: number }) => {
+            if (!ignore && typeof data.page_views === "number") {
+              setPageViews(data.page_views);
+            }
+          });
       } else if (stored) {
         clearStoredAdminPassword();
       }
@@ -66,6 +75,11 @@ export function AdminDashboard() {
 
     setStoredAdminPassword(password.trim());
     setUnlocked(true);
+    adminFetch("/api/views")
+      .then((response) => response.json())
+      .then((data: { page_views?: number }) => {
+        if (typeof data.page_views === "number") setPageViews(data.page_views);
+      });
   }
 
   function handleLogout() {
@@ -128,13 +142,18 @@ export function AdminDashboard() {
     <div className="space-y-4">
       <div className="flex items-center justify-between rounded-3xl bg-squishy-blue-soft px-4 py-3">
         <p className="text-sm font-extrabold">שלום ליהי וארי ✨</p>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="rounded-full bg-white px-3 py-1 text-xs font-bold text-ink/70"
-        >
-          יציאה
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-white px-3 py-1 text-xs font-extrabold">
+            👀 {pageViews ?? "…"} צפיות
+          </span>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="rounded-full bg-white px-3 py-1 text-xs font-bold text-ink/70"
+          >
+            יציאה
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-1.5">

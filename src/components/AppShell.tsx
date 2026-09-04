@@ -7,6 +7,7 @@ import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { Header } from "@/components/Header";
 import { ShareButton } from "@/components/ShareButton";
+import { VisitTracker } from "@/components/VisitTracker";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -25,6 +26,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </main>
           {isAdmin ? null : (
             <>
+              <VisitTracker />
               <CartButton />
               <ShareButton />
             </>

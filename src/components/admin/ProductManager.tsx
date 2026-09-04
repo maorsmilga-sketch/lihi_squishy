@@ -11,6 +11,7 @@ type FormState = {
   description: string;
   category: string;
   external_link: string;
+  stock: string;
   imageFile: File | null;
   imagePreview: string;
 };
@@ -20,15 +21,19 @@ const emptyForm: FormState = {
   description: "",
   category: "",
   external_link: "",
+  stock: "1",
   imageFile: null,
   imagePreview: "",
 };
+
+const ALL_CATEGORY = "הכל";
 
 export function ProductManager() {
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [filter, setFilter] = useState(ALL_CATEGORY);
   const existingCategories = useMemo(
     () => uniqueCategories(products),
     [products],
@@ -84,6 +89,7 @@ export function ProductManager() {
         description: form.description.trim(),
         category: form.category.trim(),
         external_link: form.external_link.trim(),
+        stock: Number(form.stock || 1),
       };
 
       const response = await adminFetch(
@@ -117,6 +123,22 @@ export function ProductManager() {
     }
   }
 
+  async function markSold(product: Product) {
+    if ((product.stock ?? 1) < 1) return;
+    const response = await adminFetch(`/api/products/${product.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ sold: true }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setMessage(data.error || "לא הצלחנו לסמן כנמכר");
+      return;
+    }
+    setProducts((current) =>
+      current.map((item) => (item.id === product.id ? data.product : item)),
+    );
+  }
+
   function startEdit(product: Product) {
     setForm({
       id: product.id,
@@ -124,11 +146,29 @@ export function ProductManager() {
       description: product.description ?? "",
       category: product.category ?? "",
       external_link: product.external_link ?? "",
+      stock: String(product.stock ?? 1),
       imageFile: null,
       imagePreview: product.image_url,
     });
     setMessage("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  const visible =
+    filter === ALL_CATEGORY
+      ? products
+      : products.filter((product) => product.category?.trim() === filter);
+
+  const grouped = useMemo(() => {
+    const groups = new Map<string, Product[]>();
+    for (const product of visible) {
+      const key = product.category?.trim() || "בלי קטגוריה";
+      const list = groups.get(key) ?? [];
+      list.push(product);
+      groups.set(key, list);
+    }
+    return Array.from(groups.entries());
+  }, [visible]);
 
   return (
     <div className="space-y-4">
@@ -168,21 +208,37 @@ export function ProductManager() {
           />
         ) : null}
 
-        <label className="block">
-          <span className="mb-1 block text-sm font-bold">מחיר</span>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            required
-            value={form.price}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, price: event.target.value }))
-            }
-            className="w-full rounded-2xl border-2 border-squishy-blue/40 bg-squishy-blue-soft px-4 py-3 font-bold outline-none"
-            placeholder="לדוגמה 25"
-          />
-        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="block">
+            <span className="mb-1 block text-sm font-bold">מחיר</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              required
+              value={form.price}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, price: event.target.value }))
+              }
+              className="w-full rounded-2xl border-2 border-squishy-blue/40 bg-squishy-blue-soft px-4 py-3 font-bold outline-none"
+              placeholder="25"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-bold">כמות</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              required
+              value={form.stock}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, stock: event.target.value }))
+              }
+              className="w-full rounded-2xl border-2 border-squishy-yellow/50 bg-squishy-yellow-soft px-4 py-3 font-bold outline-none"
+            />
+          </label>
+        </div>
 
         <label className="block">
           <span className="mb-1 block text-sm font-bold">קטגוריה (לא חובה)</span>
@@ -294,53 +350,92 @@ export function ProductManager() {
         ) : null}
       </form>
 
-      <ul className="space-y-3">
-        {products.map((product) => (
-          <li
-            key={product.id}
-            className="flex gap-3 rounded-3xl bg-white p-3 shadow-sm"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={product.image_url}
-              alt=""
-              className="h-20 w-20 rounded-2xl object-cover"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="font-extrabold">{formatPrice(product.price)}</p>
-              {product.category ? (
-                <p className="text-[11px] font-bold text-squishy-pink">
-                  {product.category}
-                </p>
-              ) : null}
-              <p className="line-clamp-2 text-xs text-ink/70">
-                {product.description || "בלי תיאור"}
-              </p>
-              {product.external_link ? (
-                <p className="mt-1 truncate text-[11px] text-ink/40" dir="ltr">
-                  {product.external_link}
-                </p>
-              ) : null}
-              <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => startEdit(product)}
-                  className="rounded-full bg-squishy-blue-soft px-3 py-1 text-xs font-bold"
+      <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {[ALL_CATEGORY, ...existingCategories].map((item) => {
+          const active = item === filter;
+          return (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setFilter(item)}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-extrabold active:scale-95 ${
+                active
+                  ? "bg-squishy-yellow text-ink shadow-sm"
+                  : "bg-white text-ink/70 ring-1 ring-pink-100"
+              }`}
+            >
+              {item}
+            </button>
+          );
+        })}
+      </div>
+
+      {grouped.map(([category, items]) => (
+        <section key={category} className="space-y-2">
+          <h4 className="text-sm font-extrabold text-ink/70">{category}</h4>
+          <ul className="grid grid-cols-2 gap-2">
+            {items.map((product) => {
+              const soldOut = (product.stock ?? 1) < 1;
+              return (
+                <li
+                  key={product.id}
+                  className="overflow-hidden rounded-3xl bg-white p-2 shadow-sm"
                 >
-                  עריכה
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(product.id)}
-                  className="rounded-full bg-squishy-pink-soft px-3 py-1 text-xs font-bold"
-                >
-                  מחיקה
-                </button>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={product.image_url}
+                      alt=""
+                      className={`h-28 w-full rounded-2xl object-cover ${
+                        soldOut ? "opacity-50" : ""
+                      }`}
+                    />
+                    {soldOut ? (
+                      <span className="absolute inset-x-2 top-2 rounded-full bg-ink/75 px-2 py-1 text-center text-[11px] font-extrabold text-white">
+                        נמכר
+                      </span>
+                    ) : (
+                      <span className="absolute left-2 top-2 rounded-full bg-squishy-yellow px-2 py-0.5 text-[11px] font-extrabold">
+                        {product.stock ?? 1}
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-sm font-extrabold">
+                    {formatPrice(product.price)}
+                  </p>
+                  <p className="line-clamp-2 text-[11px] text-ink/65">
+                    {product.description || "בלי תיאור"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(product)}
+                      className="rounded-full bg-squishy-blue-soft px-2 py-1 text-[11px] font-bold"
+                    >
+                      עריכה
+                    </button>
+                    <button
+                      type="button"
+                      disabled={soldOut}
+                      onClick={() => markSold(product)}
+                      className="rounded-full bg-squishy-yellow-soft px-2 py-1 text-[11px] font-bold disabled:opacity-40"
+                    >
+                      נמכר
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(product.id)}
+                      className="rounded-full bg-squishy-pink-soft px-2 py-1 text-[11px] font-bold"
+                    >
+                      מחיקה
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }

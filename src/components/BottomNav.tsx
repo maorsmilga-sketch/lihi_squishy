@@ -15,7 +15,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="absolute inset-x-0 bottom-0 z-20 border-t border-pink-100 bg-white/95 px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] backdrop-blur-md"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-pink-100 bg-white/95 px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:absolute"
       aria-label="ניווט ראשי"
     >
       <ul className="grid grid-cols-4 gap-1">

@@ -1,5 +1,6 @@
 import { requireAdmin, unauthorized } from "@/lib/admin";
 import { upsertProductCategory } from "@/lib/category-map";
+import { upsertProductStock } from "@/lib/stock-map";
 import { selectProducts } from "@/lib/data";
 import { ADMIN_PRODUCT_COLUMNS } from "@/lib/products";
 import { getPublicSupabase } from "@/lib/supabase/client";
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
         description?: string;
         category?: string;
         external_link?: string;
+        stock?: number | string;
       }
     | null;
 
@@ -49,6 +51,10 @@ export async function POST(request: Request) {
   const description = body?.description?.trim() || null;
   const category = body?.category?.trim() || null;
   const externalLink = body?.external_link?.trim() || null;
+  const stockValue = body?.stock === undefined || body.stock === ""
+    ? 1
+    : Number(body.stock);
+  const stock = Number.isNaN(stockValue) ? 1 : Math.max(0, Math.floor(stockValue));
 
   if (!imageUrl || Number.isNaN(price) || price < 0) {
     return Response.json({ error: "חסרים תמונה או מחיר תקין" }, { status: 400 });
@@ -62,6 +68,7 @@ export async function POST(request: Request) {
       description,
       category,
       external_link: externalLink,
+      stock,
     };
 
     let { data, error } = await supabase
@@ -69,6 +76,23 @@ export async function POST(request: Request) {
       .insert(row)
       .select(ADMIN_PRODUCT_COLUMNS)
       .single();
+
+    if (error && /stock/i.test(error.message)) {
+      const withoutStock = {
+        image_url: row.image_url,
+        price: row.price,
+        description: row.description,
+        category: row.category,
+        external_link: row.external_link,
+      };
+      const retry = await supabase
+        .from("products")
+        .insert(withoutStock)
+        .select("id, image_url, price, description, category, external_link, created_at")
+        .single();
+      data = retry.data ? { ...retry.data, stock } : null;
+      error = retry.error;
+    }
 
     if (error && /category/i.test(error.message)) {
       const withoutCategory = {
@@ -83,7 +107,7 @@ export async function POST(request: Request) {
         .select("id, image_url, price, description, external_link, created_at")
         .single();
       data = retry.data
-        ? { ...retry.data, category }
+        ? { ...retry.data, category, stock }
         : null;
       error = retry.error;
     }
@@ -93,9 +117,10 @@ export async function POST(request: Request) {
     }
 
     await upsertProductCategory(supabase, data.id, category);
+    await upsertProductStock(supabase, data.id, stock);
 
     return Response.json(
-      { product: { ...data, category } },
+      { product: { ...data, category, stock } },
       { status: 201 },
     );
   } catch {
