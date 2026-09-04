@@ -7,7 +7,6 @@ const ITEMS = [
   { href: "/", label: "חנות", icon: StoreIcon },
   { href: "/videos", label: "סרטונים", icon: VideoIcon },
   { href: "/about", label: "עלינו", icon: HeartIcon },
-  { href: "/admin", label: "ניהול", icon: StarIcon },
 ] as const;
 
 export function BottomNav() {
@@ -18,7 +17,7 @@ export function BottomNav() {
       className="absolute inset-x-0 bottom-0 z-20 border-t border-pink-100 bg-white/95 px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] backdrop-blur-md"
       aria-label="ניווט ראשי"
     >
-      <ul className="grid grid-cols-4 gap-1">
+      <ul className="grid grid-cols-3 gap-1">
         {ITEMS.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;
@@ -80,19 +79,6 @@ function HeartIcon({ active }: { active: boolean }) {
       <path
         d="M12 20s-7-4.4-7-9.2C5 8 6.8 6.4 9 6.4c1.3 0 2.4.6 3 1.6.6-1 1.7-1.6 3-1.6 2.2 0 4 1.6 4 4.4C19 15.6 12 20 12 20Z"
         fill={active ? "#F48FB1" : "#81D4FA"}
-      />
-    </svg>
-  );
-}
-
-function StarIcon({ active }: { active: boolean }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M12 3.5 14.4 9l6 .6-4.6 4 1.4 5.9L12 16.7 6.8 19.5 8.2 13.6 3.6 9.6 9.6 9 12 3.5Z"
-        fill={active ? "#FFEB3B" : "#F48FB1"}
-        stroke="#3D2C4A"
-        strokeWidth="0.6"
       />
     </svg>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TITLES: Record<string, { title: string; subtitle?: string }> = {
@@ -38,6 +39,12 @@ export function Header() {
               {current.subtitle}
             </p>
           ) : null}
+          <Link
+            href="/admin"
+            className="mt-1 inline-block text-[11px] font-bold text-ink/35"
+          >
+            ניהול
+          </Link>
         </div>
         <Portrait src="/ari_pic.png" alt="ארי" ring="ring-squishy-blue" />
       </div>
