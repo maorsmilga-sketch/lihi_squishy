@@ -56,7 +56,8 @@ export async function PATCH(request: Request, context: RouteContext) {
       .single();
 
     if (error && /category/i.test(error.message)) {
-      const { category: _category, ...withoutCategory } = patch;
+      const withoutCategory = { ...patch };
+      delete withoutCategory.category;
       const retry = await supabase
         .from("products")
         .update(withoutCategory)

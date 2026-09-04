@@ -8,9 +8,10 @@ import {
 } from "@/lib/admin-client";
 import { AboutManager } from "@/components/admin/AboutManager";
 import { ProductManager } from "@/components/admin/ProductManager";
+import { RaffleManager } from "@/components/admin/RaffleManager";
 import { VideoManager } from "@/components/admin/VideoManager";
 
-type Tab = "products" | "videos" | "about";
+type Tab = "products" | "videos" | "about" | "raffle";
 
 export function AdminDashboard() {
   const [unlocked, setUnlocked] = useState(false);
@@ -93,7 +94,7 @@ export function AdminDashboard() {
           </div>
           <h2 className="text-xl font-extrabold">כניסת מנהלות</h2>
           <p className="mt-1 text-sm font-medium text-ink/70">
-            הזינו סיסמה כדי להוסיף סקווישים, סרטונים וטקסט עלינו
+            הזינו סיסמה כדי להוסיף סקווישים, סרטונים, הגרלה וטקסט עלינו
           </p>
         </div>
         <label className="block">
@@ -136,7 +137,7 @@ export function AdminDashboard() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-1.5">
         <TabButton
           active={tab === "products"}
           onClick={() => setTab("products")}
@@ -148,6 +149,11 @@ export function AdminDashboard() {
           label="סרטונים"
         />
         <TabButton
+          active={tab === "raffle"}
+          onClick={() => setTab("raffle")}
+          label="הגרלה"
+        />
+        <TabButton
           active={tab === "about"}
           onClick={() => setTab("about")}
           label="עלינו"
@@ -156,6 +162,7 @@ export function AdminDashboard() {
 
       {tab === "products" ? <ProductManager /> : null}
       {tab === "videos" ? <VideoManager /> : null}
+      {tab === "raffle" ? <RaffleManager /> : null}
       {tab === "about" ? <AboutManager /> : null}
     </div>
   );
@@ -174,7 +181,7 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-2xl py-2.5 text-sm font-extrabold active:scale-95 ${
+      className={`rounded-2xl py-2.5 text-xs font-extrabold active:scale-95 sm:text-sm ${
         active
           ? "bg-squishy-pink text-white shadow-sm"
           : "bg-white text-ink/60 ring-1 ring-pink-100"

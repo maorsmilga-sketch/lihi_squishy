@@ -71,7 +71,12 @@ export async function POST(request: Request) {
       .single();
 
     if (error && /category/i.test(error.message)) {
-      const { category: _category, ...withoutCategory } = row;
+      const withoutCategory = {
+        image_url: row.image_url,
+        price: row.price,
+        description: row.description,
+        external_link: row.external_link,
+      };
       const retry = await supabase
         .from("products")
         .insert(withoutCategory)

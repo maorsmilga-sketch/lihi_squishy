@@ -40,7 +40,7 @@ export function ShareButton() {
     <button
       type="button"
       onClick={handleShare}
-      className="absolute bottom-[5.6rem] right-3 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-squishy-pink shadow-lg ring-4 ring-white active:scale-95"
+      className="fixed bottom-[calc(5.6rem+env(safe-area-inset-bottom))] right-3 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-squishy-pink shadow-lg ring-4 ring-white active:scale-95 sm:absolute sm:bottom-[5.6rem] sm:right-3"
       aria-label="שיתוף החנות"
     >
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>

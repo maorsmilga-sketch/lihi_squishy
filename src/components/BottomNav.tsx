@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const ITEMS = [
   { href: "/", label: "חנות", icon: StoreIcon },
   { href: "/videos", label: "סרטונים", icon: VideoIcon },
+  { href: "/raffle", label: "הגרלה", icon: GiftIcon },
   { href: "/about", label: "עלינו", icon: HeartIcon },
 ] as const;
 
@@ -17,7 +18,7 @@ export function BottomNav() {
       className="absolute inset-x-0 bottom-0 z-20 border-t border-pink-100 bg-white/95 px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))] backdrop-blur-md"
       aria-label="ניווט ראשי"
     >
-      <ul className="grid grid-cols-3 gap-1">
+      <ul className="grid grid-cols-4 gap-1">
         {ITEMS.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;
@@ -69,6 +70,27 @@ function VideoIcon({ active }: { active: boolean }) {
         fill={active ? "#81D4FA" : "#F48FB1"}
       />
       <path d="M17 10.2 21 8v8l-4-2.2V10.2Z" fill={active ? "#F48FB1" : "#81D4FA"} />
+    </svg>
+  );
+}
+
+function GiftIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect
+        x="4"
+        y="10"
+        width="16"
+        height="10"
+        rx="2"
+        fill={active ? "#FFEB3B" : "#F48FB1"}
+      />
+      <path d="M4 10h16V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v2Z" fill={active ? "#F48FB1" : "#81D4FA"} />
+      <path d="M12 6v14" stroke="white" strokeWidth="2" />
+      <path
+        d="M12 8c-2 0-3.5-1.4-3.5-3S10.2 4 12 6c1.8-2 3.5-.6 3.5 1S14 8 12 8Z"
+        fill={active ? "#81D4FA" : "#FFEB3B"}
+      />
     </svg>
   );
 }

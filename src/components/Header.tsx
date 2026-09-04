@@ -21,6 +21,10 @@ const TITLES: Record<string, { title: string; subtitle?: string }> = {
     title: "עלינו",
     subtitle: "הסיפור של ליהי וארי",
   },
+  "/raffle": {
+    title: "הגרלה",
+    subtitle: "סקווישי אחד זוכה",
+  },
   "/admin": {
     title: "ניהול",
     subtitle: "רק לליהי ולארי",

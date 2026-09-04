@@ -4,7 +4,12 @@ import {
   ADMIN_PRODUCT_COLUMNS,
   PUBLIC_PRODUCT_COLUMNS,
 } from "@/lib/products";
-import type { Product, Settings, Video } from "@/lib/types";
+import {
+  loadRaffleAndDraw,
+  toPublicState,
+} from "@/lib/raffle";
+import { getServiceSupabase } from "@/lib/supabase/server";
+import type { Product, RaffleState, Settings, Video } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export async function selectProducts(
@@ -84,4 +89,30 @@ export async function getSettings(): Promise<Settings | null> {
   }
 
   return data as Settings | null;
+}
+
+export async function getRaffleState(): Promise<RaffleState> {
+  try {
+    const supabase = getServiceSupabase();
+    const stored = await loadRaffleAndDraw(supabase);
+    if (!stored) {
+      return {
+        raffle: null,
+        entries: [],
+        entryCount: 0,
+        isOpen: false,
+        isEnded: false,
+      };
+    }
+    return toPublicState(stored.raffle, stored.entries);
+  } catch (error) {
+    console.error(error);
+    return {
+      raffle: null,
+      entries: [],
+      entryCount: 0,
+      isOpen: false,
+      isEnded: false,
+    };
+  }
 }

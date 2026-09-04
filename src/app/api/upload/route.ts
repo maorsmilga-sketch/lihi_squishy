@@ -3,7 +3,7 @@ import { getServiceSupabase } from "@/lib/supabase/server";
 
 export const maxDuration = 60;
 
-const ALLOWED_FOLDERS = new Set(["products", "videos"]);
+const ALLOWED_FOLDERS = new Set(["products", "videos", "raffles"]);
 const MAX_FILE_SIZE = 40 * 1024 * 1024;
 
 export async function POST(request: Request) {
