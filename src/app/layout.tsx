@@ -27,9 +27,9 @@ export const metadata: Metadata = {
     description: "חנות סקווישים צבעונית וכיפית — בואו לבחור סקווישי!",
     images: [
       {
-        url: "/og-image.png",
-        width: 1376,
-        height: 768,
+        url: "/og-share.png",
+        width: 1536,
+        height: 1024,
         alt: "עולם הסקווישים של ליהי וארי",
       },
     ],
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "עולם הסקווישים של ליהי וארי",
     description: "חנות סקווישים צבעונית וכיפית — בואו לבחור סקווישי!",
-    images: ["/og-image.png"],
+    images: ["/og-share.png"],
   },
   appleWebApp: {
     capable: true,
