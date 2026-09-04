@@ -1,4 +1,5 @@
 import { formatShekels, productLabel } from "@/lib/format";
+import { productSku } from "@/lib/products";
 import type { CartItem } from "@/lib/cart-types";
 
 export const WHATSAPP_NUMBER = "972543206418";
@@ -11,7 +12,9 @@ function rtl(line: string) {
 
 export function buildWhatsAppOrderMessage(items: CartItem[]) {
   const lines = items.map((item) =>
-    rtl(`🧸 ${item.quantity} × ${productLabel(item)}  •  ${formatShekels(item.price)}`),
+    rtl(
+      `🧸 #${productSku(item)}  ·  ${item.quantity} × ${productLabel(item)}  •  ${formatShekels(item.price)}`,
+    ),
   );
   const total = items.reduce(
     (sum, item) => sum + Number(item.price) * item.quantity,

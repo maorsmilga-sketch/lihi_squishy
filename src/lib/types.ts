@@ -5,6 +5,7 @@ export type Product = {
   description: string | null;
   category: string | null;
   stock: number;
+  sku: string;
   created_at: string;
   external_link?: string | null;
 };

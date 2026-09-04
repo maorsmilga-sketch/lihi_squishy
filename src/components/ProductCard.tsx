@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useCart } from "@/components/cart/CartProvider";
 import { formatPrice } from "@/lib/format";
+import { productSku } from "@/lib/products";
 import type { Product } from "@/lib/types";
 
 export function ProductCard({ product, index }: { product: Product; index: number }) {
@@ -38,6 +39,9 @@ export function ProductCard({ product, index }: { product: Product; index: numbe
           <div className="px-1 pb-1 pt-2">
             <span className="inline-block rounded-full bg-squishy-yellow px-2.5 py-0.5 text-sm font-extrabold text-ink">
               {formatPrice(product.price)}
+            </span>
+            <span className="mr-1 inline-block rounded-full bg-white px-2 py-0.5 text-[10px] font-extrabold text-ink/70">
+              #{productSku(product)}
             </span>
             {product.category ? (
               <span className="mr-1 inline-block rounded-full bg-squishy-blue-soft px-2 py-0.5 text-[10px] font-bold text-ink/70">
@@ -83,6 +87,9 @@ export function ProductCard({ product, index }: { product: Product; index: numbe
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="inline-block rounded-full bg-squishy-pink px-3 py-1 text-base font-extrabold text-white">
                       {formatPrice(product.price)}
+                    </span>
+                    <span className="inline-block rounded-full bg-white px-3 py-1 text-xs font-extrabold ring-1 ring-pink-100">
+                      #{productSku(product)}
                     </span>
                     {product.category ? (
                       <span className="inline-block rounded-full bg-squishy-blue-soft px-3 py-1 text-xs font-bold">

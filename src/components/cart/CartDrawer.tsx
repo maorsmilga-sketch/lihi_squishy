@@ -2,6 +2,7 @@
 
 import { useCart } from "@/components/cart/CartProvider";
 import { formatPrice, formatShekels, productLabel } from "@/lib/format";
+import { productSku } from "@/lib/products";
 import { buildWhatsAppOrderUrl } from "@/lib/whatsapp";
 
 export function CartDrawer() {
@@ -56,6 +57,9 @@ export function CartDrawer() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-extrabold">
                     {productLabel(item)}
+                  </p>
+                  <p className="text-[11px] font-extrabold text-ink/50">
+                    #{productSku(item)}
                   </p>
                   <p className="text-xs font-bold text-ink/60">
                     {formatPrice(item.price)}

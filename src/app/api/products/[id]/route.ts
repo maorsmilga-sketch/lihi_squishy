@@ -1,7 +1,8 @@
 import { requireAdmin, unauthorized } from "@/lib/admin";
 import { removeProductCategory, upsertProductCategory } from "@/lib/category-map";
-import { ADMIN_PRODUCT_COLUMNS } from "@/lib/products";
+import { ADMIN_PRODUCT_COLUMNS, skuFromId } from "@/lib/products";
 import { loadStockMap, removeProductStock, upsertProductStock } from "@/lib/stock-map";
+import { removeProductSku } from "@/lib/sku-map";
 import { getServiceSupabase } from "@/lib/supabase/server";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -92,7 +93,11 @@ export async function PATCH(request: Request, context: RouteContext) {
           .eq("id", id)
           .single();
         data = existing.data
-          ? { ...existing.data, stock: typeof patch.stock === "number" ? patch.stock : 1 }
+          ? {
+              ...existing.data,
+              stock: typeof patch.stock === "number" ? patch.stock : 1,
+              sku: skuFromId(id),
+            }
           : null;
         error = existing.error;
       } else {
@@ -103,7 +108,11 @@ export async function PATCH(request: Request, context: RouteContext) {
           .select("id, image_url, price, description, category, external_link, created_at")
           .single();
         data = retry.data
-          ? { ...retry.data, stock: typeof patch.stock === "number" ? patch.stock : 1 }
+          ? {
+              ...retry.data,
+              stock: typeof patch.stock === "number" ? patch.stock : 1,
+              sku: skuFromId(id),
+            }
           : null;
         error = retry.error;
       }
@@ -120,7 +129,12 @@ export async function PATCH(request: Request, context: RouteContext) {
         .select("id, image_url, price, description, external_link, created_at")
         .single();
       data = retry.data
-        ? { ...retry.data, category: categoryValue ?? null, stock: typeof patch.stock === "number" ? patch.stock : 1 }
+        ? {
+            ...retry.data,
+            category: categoryValue ?? null,
+            stock: typeof patch.stock === "number" ? patch.stock : 1,
+            sku: skuFromId(id),
+          }
         : null;
       error = retry.error;
     }
@@ -165,6 +179,7 @@ export async function DELETE(request: Request, context: RouteContext) {
 
     await removeProductCategory(supabase, id);
     await removeProductStock(supabase, id);
+    await removeProductSku(supabase, id);
 
     return Response.json({ ok: true });
   } catch {

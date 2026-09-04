@@ -1,9 +1,11 @@
 import { getPublicSupabase } from "@/lib/supabase/client";
 import { loadCategoryMap, mergeProductCategories } from "@/lib/category-map";
+import { loadSkuMap, mergeProductSkus } from "@/lib/sku-map";
 import { loadStockMap, mergeProductStock } from "@/lib/stock-map";
 import {
   ADMIN_PRODUCT_COLUMNS,
   PUBLIC_PRODUCT_COLUMNS,
+  skuFromId,
 } from "@/lib/products";
 import {
   loadRaffleAndDraw,
@@ -23,6 +25,16 @@ export async function selectProducts(
     .select(columns)
     .order("created_at", { ascending: false });
 
+  if (error && /sku/i.test(error.message)) {
+    const withoutSku = columns.replace(", sku", "");
+    const retry = await supabase
+      .from("products")
+      .select(withoutSku)
+      .order("created_at", { ascending: false });
+    data = retry.data as typeof data;
+    error = retry.error;
+  }
+
   if (error && /stock/i.test(error.message)) {
     const withoutStock = columns.replace(", stock", "");
     const retry = await supabase
@@ -39,6 +51,7 @@ export async function selectProducts(
     products = ((data as unknown as Product[]) ?? []).map((product) => ({
       ...product,
       stock: typeof product.stock === "number" ? product.stock : 1,
+      sku: product.sku || skuFromId(product.id),
     }));
   } else {
     const fallbackColumns = admin
@@ -58,17 +71,22 @@ export async function selectProducts(
       ...product,
       category: product.category ?? null,
       stock: 1,
+      sku: skuFromId(product.id),
     }));
   }
 
   const supabaseForMaps = admin ? supabase : null;
-  const [categoryMap, stockMap] = await Promise.all([
+  const [categoryMap, stockMap, skuMap] = await Promise.all([
     loadCategoryMap(supabaseForMaps),
     loadStockMap(supabaseForMaps),
+    loadSkuMap(supabaseForMaps),
   ]);
-  const withMeta = mergeProductStock(
-    mergeProductCategories(products, categoryMap),
-    stockMap,
+  const withMeta = mergeProductSkus(
+    mergeProductStock(
+      mergeProductCategories(products, categoryMap),
+      stockMap,
+    ),
+    skuMap,
   );
   return admin ? withMeta : withMeta.filter((product) => product.stock > 0);
 }

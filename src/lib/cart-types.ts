@@ -6,4 +6,5 @@ export type CartItem = {
   category: string | null;
   quantity: number;
   stock?: number;
+  sku?: string;
 };

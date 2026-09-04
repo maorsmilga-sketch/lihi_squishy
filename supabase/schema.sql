@@ -17,6 +17,7 @@ create table if not exists public.products (
   category text,
   external_link text,
   stock integer not null default 1 check (stock >= 0),
+  sku text,
   created_at timestamptz not null default now()
 );
 
@@ -81,7 +82,7 @@ create policy "Public can read settings"
 
 -- הקישור החיצוני מוסתר ממשתמשות רגילות גם ברמת העמודה
 revoke all on table public.products from anon, authenticated;
-grant select (id, image_url, price, description, category, stock, created_at)
+grant select (id, image_url, price, description, category, stock, sku, created_at)
   on table public.products to anon, authenticated;
 
 grant select on table public.videos to anon, authenticated;
@@ -97,6 +98,7 @@ create policy "Public can view media"
 -- אינדקסים
 create index if not exists products_created_at_idx on public.products (created_at desc);
 create index if not exists products_category_idx on public.products (category);
+create unique index if not exists products_sku_idx on public.products (sku);
 create index if not exists videos_created_at_idx on public.videos (created_at desc);
 
 -- -----------------------------------------------------------------------------

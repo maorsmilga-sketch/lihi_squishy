@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { adminFetch } from "@/lib/admin-client";
 import { formatPrice, uniqueCategories } from "@/lib/format";
+import { productSku } from "@/lib/products";
 import type { Product } from "@/lib/types";
 
 type FormState = {
@@ -179,6 +180,15 @@ export function ProductManager() {
         <h3 className="text-lg font-extrabold">
           {form.id ? "עריכת סקווישי" : "הוספת סקווישי חדש"}
         </h3>
+        {form.id ? (
+          <p className="rounded-2xl bg-squishy-blue-soft px-3 py-2 text-center text-sm font-extrabold">
+            מזהה: #{products.find((item) => item.id === form.id)?.sku ?? productSku({ id: form.id })}
+          </p>
+        ) : (
+          <p className="text-xs font-bold text-ink/55">
+            אחרי ההוספה יווצר מזהה קצר שיופיע גם בווצאפ
+          </p>
+        )}
 
         <label className="block">
           <span className="mb-1 block text-sm font-bold">תמונה</span>
@@ -402,6 +412,9 @@ export function ProductManager() {
                   </div>
                   <p className="mt-2 text-sm font-extrabold">
                     {formatPrice(product.price)}
+                  </p>
+                  <p className="text-[11px] font-extrabold text-ink/55">
+                    #{productSku(product)}
                   </p>
                   <p className="line-clamp-2 text-[11px] text-ink/65">
                     {product.description || "בלי תיאור"}

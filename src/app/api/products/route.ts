@@ -1,8 +1,9 @@
 import { requireAdmin, unauthorized } from "@/lib/admin";
 import { upsertProductCategory } from "@/lib/category-map";
+import { generateSku, ADMIN_PRODUCT_COLUMNS } from "@/lib/products";
+import { upsertProductSku } from "@/lib/sku-map";
 import { upsertProductStock } from "@/lib/stock-map";
 import { selectProducts } from "@/lib/data";
-import { ADMIN_PRODUCT_COLUMNS } from "@/lib/products";
 import { getPublicSupabase } from "@/lib/supabase/client";
 import { getServiceSupabase } from "@/lib/supabase/server";
 
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
 
   try {
     const supabase = getServiceSupabase();
+    const sku = generateSku();
     const row = {
       image_url: imageUrl,
       price,
@@ -69,6 +71,7 @@ export async function POST(request: Request) {
       category,
       external_link: externalLink,
       stock,
+      sku,
     };
 
     let { data, error } = await supabase
@@ -76,6 +79,24 @@ export async function POST(request: Request) {
       .insert(row)
       .select(ADMIN_PRODUCT_COLUMNS)
       .single();
+
+    if (error && /sku/i.test(error.message)) {
+      const withoutSku = {
+        image_url: row.image_url,
+        price: row.price,
+        description: row.description,
+        category: row.category,
+        external_link: row.external_link,
+        stock: row.stock,
+      };
+      const retry = await supabase
+        .from("products")
+        .insert(withoutSku)
+        .select("id, image_url, price, description, category, stock, external_link, created_at")
+        .single();
+      data = retry.data ? { ...retry.data, sku } : null;
+      error = retry.error;
+    }
 
     if (error && /stock/i.test(error.message)) {
       const withoutStock = {
@@ -90,7 +111,7 @@ export async function POST(request: Request) {
         .insert(withoutStock)
         .select("id, image_url, price, description, category, external_link, created_at")
         .single();
-      data = retry.data ? { ...retry.data, stock } : null;
+      data = retry.data ? { ...retry.data, stock, sku } : null;
       error = retry.error;
     }
 
@@ -107,7 +128,7 @@ export async function POST(request: Request) {
         .select("id, image_url, price, description, external_link, created_at")
         .single();
       data = retry.data
-        ? { ...retry.data, category, stock }
+        ? { ...retry.data, category, stock, sku }
         : null;
       error = retry.error;
     }
@@ -118,9 +139,10 @@ export async function POST(request: Request) {
 
     await upsertProductCategory(supabase, data.id, category);
     await upsertProductStock(supabase, data.id, stock);
+    await upsertProductSku(supabase, data.id, sku);
 
     return Response.json(
-      { product: { ...data, category, stock } },
+      { product: { ...data, category, stock, sku } },
       { status: 201 },
     );
   } catch {

@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { productSku } from "@/lib/products";
 import type { CartItem } from "@/lib/cart-types";
 import type { Product } from "@/lib/types";
 
@@ -58,7 +59,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (existing.quantity >= stock) return current;
         return current.map((item) =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + 1, stock }
+            ? { ...item, quantity: item.quantity + 1, stock, sku: productSku(product) }
             : item,
         );
       }
@@ -73,6 +74,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           category: product.category ?? null,
           quantity: 1,
           stock,
+          sku: productSku(product),
         },
       ];
     });
