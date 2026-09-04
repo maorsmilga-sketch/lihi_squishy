@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { adminFetch } from "@/lib/admin-client";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, uniqueCategories } from "@/lib/format";
 import type { Product } from "@/lib/types";
 
 type FormState = {
@@ -29,6 +29,10 @@ export function ProductManager() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const existingCategories = useMemo(
+    () => uniqueCategories(products),
+    [products],
+  );
 
   async function loadProducts() {
     const response = await adminFetch("/api/products");
@@ -77,9 +81,9 @@ export function ProductManager() {
       const body = {
         image_url: imageUrl,
         price: Number(form.price),
-        description: form.description,
-        category: form.category,
-        external_link: form.external_link,
+        description: form.description.trim(),
+        category: form.category.trim(),
+        external_link: form.external_link.trim(),
       };
 
       const response = await adminFetch(
@@ -181,7 +185,7 @@ export function ProductManager() {
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-sm font-bold">קטגוריה</span>
+          <span className="mb-1 block text-sm font-bold">קטגוריה (לא חובה)</span>
           <input
             list="product-categories"
             value={form.category}
@@ -192,19 +196,43 @@ export function ProductManager() {
               }))
             }
             className="w-full rounded-2xl border-2 border-squishy-yellow/50 bg-squishy-yellow-soft px-4 py-3 font-bold outline-none"
-            placeholder="לדוגמה: אוכל, חיות, קשת"
+            placeholder="כתבו קטגוריה חדשה או בחרו מהרשימה"
           />
           <datalist id="product-categories">
-            {Array.from(
-              new Set(
-                products
-                  .map((product) => product.category?.trim())
-                  .filter((category): category is string => Boolean(category)),
-              ),
-            ).map((category) => (
+            {existingCategories.map((category) => (
               <option key={category} value={category} />
             ))}
           </datalist>
+          {existingCategories.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              <p className="w-full text-xs font-bold text-ink/60">
+                קטגוריות קיימות — לחצו כדי לבחור:
+              </p>
+              {existingCategories.map((category) => {
+                const selected = form.category.trim() === category;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    onClick={() =>
+                      setForm((current) => ({ ...current, category }))
+                    }
+                    className={`rounded-full px-3 py-1 text-xs font-extrabold active:scale-95 ${
+                      selected
+                        ? "bg-squishy-yellow text-ink shadow-sm"
+                        : "bg-white text-ink/70 ring-1 ring-pink-100"
+                    }`}
+                  >
+                    {category}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-2 text-xs font-medium text-ink/55">
+              עדיין אין קטגוריות. הקטגוריה הראשונה שתכתבו תופיע כאן בפעם הבאה.
+            </p>
+          )}
         </label>
 
         <label className="block">
@@ -225,10 +253,11 @@ export function ProductManager() {
 
         <label className="block">
           <span className="mb-1 block text-sm font-bold">
-            קישור חיצוני (מוסתר מהחנות)
+            קישור לחנות (לא חובה, מוסתר מהחנות)
           </span>
           <input
-            type="url"
+            type="text"
+            inputMode="url"
             value={form.external_link}
             onChange={(event) =>
               setForm((current) => ({
@@ -237,7 +266,8 @@ export function ProductManager() {
               }))
             }
             className="w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3 text-sm outline-none"
-            placeholder="https://..."
+            placeholder="לא חובה — למשל https://..."
+            dir="ltr"
           />
         </label>
 

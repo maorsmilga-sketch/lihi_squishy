@@ -1,4 +1,5 @@
 import { getPublicSupabase } from "@/lib/supabase/client";
+import { loadCategoryMap, mergeProductCategories } from "@/lib/category-map";
 import {
   ADMIN_PRODUCT_COLUMNS,
   PUBLIC_PRODUCT_COLUMNS,
@@ -16,27 +17,32 @@ export async function selectProducts(
     .select(columns)
     .order("created_at", { ascending: false });
 
+  let products: Product[] = [];
+
   if (!error) {
-    return (data as unknown as Product[]) ?? [];
+    products = (data as unknown as Product[]) ?? [];
+  } else {
+    const fallbackColumns = admin
+      ? "id, image_url, price, description, external_link, created_at"
+      : "id, image_url, price, description, created_at";
+    const fallback = await supabase
+      .from("products")
+      .select(fallbackColumns)
+      .order("created_at", { ascending: false });
+
+    if (fallback.error) {
+      console.error(fallback.error);
+      return [];
+    }
+
+    products = ((fallback.data as unknown as Product[]) ?? []).map((product) => ({
+      ...product,
+      category: product.category ?? null,
+    }));
   }
 
-  const fallbackColumns = admin
-    ? "id, image_url, price, description, external_link, created_at"
-    : "id, image_url, price, description, created_at";
-  const fallback = await supabase
-    .from("products")
-    .select(fallbackColumns)
-    .order("created_at", { ascending: false });
-
-  if (fallback.error) {
-    console.error(fallback.error);
-    return [];
-  }
-
-  return ((fallback.data as unknown as Product[]) ?? []).map((product) => ({
-    ...product,
-    category: product.category ?? null,
-  }));
+  const map = await loadCategoryMap(admin ? supabase : null);
+  return mergeProductCategories(products, map);
 }
 
 export async function getProducts(): Promise<Product[]> {

@@ -1,4 +1,5 @@
 import { requireAdmin, unauthorized } from "@/lib/admin";
+import { upsertProductCategory } from "@/lib/category-map";
 import { selectProducts } from "@/lib/data";
 import { ADMIN_PRODUCT_COLUMNS } from "@/lib/products";
 import { getPublicSupabase } from "@/lib/supabase/client";
@@ -55,31 +56,43 @@ export async function POST(request: Request) {
 
   try {
     const supabase = getServiceSupabase();
-    const { data, error } = await supabase
+    const row = {
+      image_url: imageUrl,
+      price,
+      description,
+      category,
+      external_link: externalLink,
+    };
+
+    let { data, error } = await supabase
       .from("products")
-      .insert({
-        image_url: imageUrl,
-        price,
-        description,
-        category,
-        external_link: externalLink,
-      })
+      .insert(row)
       .select(ADMIN_PRODUCT_COLUMNS)
       .single();
 
-    if (error) {
-      const needsCategoryColumn = /category/i.test(error.message);
-      return Response.json(
-        {
-          error: needsCategoryColumn
-            ? "חסרה עמודת קטגוריה. הריצו את supabase/add-category.sql בסופאבייס"
-            : "לא הצלחנו לשמור את הסקווישי",
-        },
-        { status: 500 },
-      );
+    if (error && /category/i.test(error.message)) {
+      const { category: _category, ...withoutCategory } = row;
+      const retry = await supabase
+        .from("products")
+        .insert(withoutCategory)
+        .select("id, image_url, price, description, external_link, created_at")
+        .single();
+      data = retry.data
+        ? { ...retry.data, category }
+        : null;
+      error = retry.error;
     }
 
-    return Response.json({ product: data }, { status: 201 });
+    if (error || !data) {
+      return Response.json({ error: "לא הצלחנו לשמור את הסקווישי" }, { status: 500 });
+    }
+
+    await upsertProductCategory(supabase, data.id, category);
+
+    return Response.json(
+      { product: { ...data, category } },
+      { status: 201 },
+    );
   } catch {
     return Response.json({ error: "חסר חיבור לסופאבייס" }, { status: 500 });
   }

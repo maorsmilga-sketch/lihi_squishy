@@ -1,4 +1,5 @@
 import { requireAdmin, unauthorized } from "@/lib/admin";
+import { removeProductCategory, upsertProductCategory } from "@/lib/category-map";
 import { ADMIN_PRODUCT_COLUMNS } from "@/lib/products";
 import { getServiceSupabase } from "@/lib/supabase/server";
 
@@ -44,26 +45,44 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     const supabase = getServiceSupabase();
-    const { data, error } = await supabase
+    const categoryValue =
+      body?.category !== undefined ? body.category.trim() || null : undefined;
+
+    let { data, error } = await supabase
       .from("products")
       .update(patch)
       .eq("id", id)
       .select(ADMIN_PRODUCT_COLUMNS)
       .single();
 
-    if (error) {
-      const needsCategoryColumn = /category/i.test(error.message);
-      return Response.json(
-        {
-          error: needsCategoryColumn
-            ? "חסרה עמודת קטגוריה. הריצו את supabase/add-category.sql בסופאבייס"
-            : "לא הצלחנו לעדכן את הסקווישי",
-        },
-        { status: 500 },
-      );
+    if (error && /category/i.test(error.message)) {
+      const { category: _category, ...withoutCategory } = patch;
+      const retry = await supabase
+        .from("products")
+        .update(withoutCategory)
+        .eq("id", id)
+        .select("id, image_url, price, description, external_link, created_at")
+        .single();
+      data = retry.data
+        ? { ...retry.data, category: categoryValue ?? null }
+        : null;
+      error = retry.error;
     }
 
-    return Response.json({ product: data });
+    if (error || !data) {
+      return Response.json({ error: "לא הצלחנו לעדכן את הסקווישי" }, { status: 500 });
+    }
+
+    if (categoryValue !== undefined) {
+      await upsertProductCategory(supabase, id, categoryValue);
+    }
+
+    return Response.json({
+      product: {
+        ...data,
+        category: categoryValue !== undefined ? categoryValue : data.category,
+      },
+    });
   } catch {
     return Response.json({ error: "חסר חיבור לסופאבייס" }, { status: 500 });
   }
@@ -83,6 +102,8 @@ export async function DELETE(request: Request, context: RouteContext) {
     if (error) {
       return Response.json({ error: "לא הצלחנו למחוק את הסקווישי" }, { status: 500 });
     }
+
+    await removeProductCategory(supabase, id);
 
     return Response.json({ ok: true });
   } catch {
