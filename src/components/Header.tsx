@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 const TITLES: Record<string, { title: string; subtitle?: string }> = {
   "/": {
@@ -24,13 +24,37 @@ const TITLES: Record<string, { title: string; subtitle?: string }> = {
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+  const holdTimer = useRef<number | null>(null);
   const current = TITLES[pathname] ?? TITLES["/"];
+
+  function startSecretHold() {
+    if (pathname === "/admin") return;
+    stopSecretHold();
+    holdTimer.current = window.setTimeout(() => {
+      router.push("/admin");
+    }, 2000);
+  }
+
+  function stopSecretHold() {
+    if (holdTimer.current) {
+      window.clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+  }
 
   return (
     <header className="relative z-10 shrink-0 bg-gradient-to-l from-squishy-pink via-squishy-yellow-soft to-squishy-blue px-4 pb-3 pt-[max(0.8rem,env(safe-area-inset-top))]">
       <div className="flex items-center gap-3">
         <Portrait src="/lihi_pic.jpg" alt="ליהי" ring="ring-squishy-pink" />
-        <div className="min-w-0 flex-1 text-center">
+        <div
+          className="min-w-0 flex-1 select-none text-center touch-manipulation"
+          onPointerDown={startSecretHold}
+          onPointerUp={stopSecretHold}
+          onPointerLeave={stopSecretHold}
+          onPointerCancel={stopSecretHold}
+          onContextMenu={(event) => event.preventDefault()}
+        >
           <h1 className="text-xl font-extrabold leading-tight tracking-tight text-ink sm:text-2xl">
             {current.title}
           </h1>
@@ -39,12 +63,6 @@ export function Header() {
               {current.subtitle}
             </p>
           ) : null}
-          <Link
-            href="/admin"
-            className="mt-1 inline-block text-[11px] font-bold text-ink/35"
-          >
-            ניהול
-          </Link>
         </div>
         <Portrait src="/ari_pic.png" alt="ארי" ring="ring-squishy-blue" />
       </div>

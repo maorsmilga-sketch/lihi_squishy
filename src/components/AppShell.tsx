@@ -1,12 +1,17 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { BottomNav } from "@/components/BottomNav";
 import { CartButton } from "@/components/cart/CartButton";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { Header } from "@/components/Header";
+import { ShareButton } from "@/components/ShareButton";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isAdmin = pathname === "/admin";
+
   return (
     <CartProvider>
       <div className="min-h-dvh bg-gradient-to-b from-squishy-blue via-squishy-blue-soft to-squishy-pink-soft">
@@ -18,7 +23,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <main className="app-scroll relative z-10 flex-1 overflow-y-auto px-4 pb-28 pt-3">
             {children}
           </main>
-          <CartButton />
+          {isAdmin ? null : (
+            <>
+              <CartButton />
+              <ShareButton />
+            </>
+          )}
           <BottomNav />
           <CartDrawer />
         </div>
